@@ -14,6 +14,7 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -28,6 +29,7 @@ public class ProductController {
     private final ProductService productService;
     private final CloudinaryService cloudinaryService;
     private final ObjectMapper objectMapper;
+
     @Autowired
     public ProductController(ProductService productService, CloudinaryService cloudinaryService, ObjectMapper objectMapper) {
         this.productService = productService;
@@ -46,11 +48,12 @@ public class ProductController {
             )
     )
     @PostMapping(consumes = {"multipart/form-data"})
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Product> createProduct(
             @RequestPart("product") @Valid String productJson,
-            @RequestPart(value = "file", required = false) MultipartFile file) {
+            @RequestPart(value = "file", required = false) MultipartFile file) throws IOException {
 
-        try {
+
             Product product = objectMapper.readValue(productJson, Product.class);
 
             if (file != null && !file.isEmpty()) {
@@ -61,11 +64,6 @@ public class ProductController {
             Product createdProduct = productService.createProduct(product);
             return new ResponseEntity<>(createdProduct, HttpStatus.CREATED);
 
-        } catch (IOException e) {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-        } catch (RuntimeException e) {
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-        }
     }
 
     @Operation(
@@ -79,12 +77,12 @@ public class ProductController {
             )
     )
     @PutMapping(value = "/{id}", consumes = {"multipart/form-data"})
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Product> updateProduct(
             @PathVariable Long id,
             @RequestPart("product") @Valid String productJson,
-            @RequestPart(value = "file", required = false) MultipartFile file) {
+            @RequestPart(value = "file", required = false) MultipartFile file) throws IOException{
 
-        try {
             Product productDetails = objectMapper.readValue(productJson, Product.class);
 
             if (file != null && !file.isEmpty()) {
@@ -95,31 +93,30 @@ public class ProductController {
             Product updatedProduct = productService.updateProduct(id, productDetails);
             return ResponseEntity.ok(updatedProduct);
 
-        } catch (IOException e) {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-        } catch (RuntimeException e) {
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-        }
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<Product>> getAllProducts() {
         List<Product> products = productService.getAllProducts();
         return ResponseEntity.ok(products);
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Product> getProductById(@PathVariable Long id) {
         Product product = productService.getProductById(id);
         return ResponseEntity.ok(product);
     }
 
     @GetMapping("/search")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<Product>> searchProductsByName(@RequestParam String name) {
         return ResponseEntity.ok(productService.searchProductsByName(name));
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteProduct(@PathVariable Long id) {
         productService.deleteProduct(id);
         return ResponseEntity.noContent().build();
