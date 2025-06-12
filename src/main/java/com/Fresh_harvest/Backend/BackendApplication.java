@@ -17,13 +17,13 @@ public class BackendApplication {
 	@Bean
 	public CommandLineRunner run(RoleRepository roleRepository) {
 		return args -> {
-			if (!roleRepository.findByName(ERole.ROLE_ADMIN).isPresent()) {
+			if (roleRepository.findByName(ERole.ROLE_ADMIN).isEmpty()) {
 				roleRepository.save(new Role(ERole.ROLE_ADMIN));
 			}
-			if (!roleRepository.findByName(ERole.ROLE_SELLER).isPresent()) {
+			if (roleRepository.findByName(ERole.ROLE_SELLER).isEmpty()) {
 				roleRepository.save(new Role(ERole.ROLE_SELLER));
 			}
-			if (!roleRepository.findByName(ERole.ROLE_CUSTOMER).isPresent()) {
+			if (roleRepository.findByName(ERole.ROLE_CUSTOMER).isEmpty()) {
 				roleRepository.save(new Role(ERole.ROLE_CUSTOMER));
 			}
 		};

@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.security.SecureRandom;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -16,5 +17,5 @@ public class JwtAuthResponse {
     private Long userId;
     private String username;
     private String email;
-    private String role;
+    private List<String> roles;
 }

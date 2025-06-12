@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <title>Fresh Harvest Home</title>
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f2f7f1; display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+    .container { background-color: white; padding: 40px; border-radius: 12px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15); text-align: center; max-width: 700px; width: 90%; }
+    h1 { color: #34495e; margin-bottom: 25px; font-size: 36px; }
+    p { color: #555; font-size: 18px; line-height: 1.6; }
+    .button-group { margin-top: 30px; }
+    .button-group a { background-color: #4CAF50; color: white; padding: 12px 25px; border: none; border-radius: 8px; cursor: pointer; text-decoration: none; display: inline-block; margin: 10px; font-size: 18px; transition: background-color 0.3s; }
+    .button-group a:hover { background-color: #45a049; }
+    .user-info { margin-top: 30px; padding: 15px; border: 1px solid #ddd; border-radius: 8px; background-color: #f9f9f9; font-size: 16px; }
+    .user-info span { font-weight: 600; color: #666; }
+    .dashboard-links { margin-top: 20px; text-align: left; }
+    .dashboard-links a { display: block; margin-bottom: 10px; color: #007bff; text-decoration: none; font-size: 16px; }
+    .dashboard-links a:hover { text-decoration: underline; }
+    .logout-button {
+        background-color: #dc3545;
+        color: white;
+        padding: 12px 25px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+        margin-top: 30px;
+        font-size: 18px;
+        transition: background-color 0.3s;
+    }
+    .logout-button:hover { background-color: #c82333; }
+    #dynamicContent {
+        margin-top: 30px;
+        padding: 20px;
+        border: 1px dashed #ccc;
+        background-color: #f9f9f9;
+        text-align: left;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>Welcome to Fresh Harvest!</h1>
+  <p>Your one-stop shop for fresh produce direct from farms.</p>
+
+  <div id="authenticatedContent" style="display: none;">
+    <div class="user-info">
+      <p>You are logged in as: <span id="loggedInUsername">Loading...</span></p>
+      <p>Your roles: <span id="loggedInRoles">Loading...</span></p>
+    </div>
+
+    <div class="dashboard-links">
+      <h3 style="color: #333; margin-top: 25px;">Go to your dashboard:</h3>
+      <a th:href="@{/admin/dashboard}" id="adminLink" style="display:none;">Admin Dashboard</a>
+      <a th:href="@{/seller/dashboard}" id="sellerLink" style="display:none;">Seller Dashboard</a>
+      <a th:href="@{/customer/dashboard}" id="customerLink" style="display:none;">Customer Dashboard</a>
+    </div>
+    <div id="dynamicContent">
+      Loading home content...
+    </div>
+    <button onclick="logout()" class="logout-button">Logout</button>
+  </div>
+
+  <div id="anonymousContent" class="button-group" style="display: none;">
+    <p>Please login or register to access Fresh Harvest features.</p>
+    <a th:href="@{/login}">Login</a>
+    <a th:href="@{/register}">Register</a>
+  </div>
+</div>
+
+<script>
+  function getAuthHeader() {
+      const accessToken = localStorage.getItem('accessToken');
+      const tokenType = localStorage.getItem('tokenType') || 'Bearer';
+      return accessToken ? { 'Authorization': `${tokenType} ${accessToken}` } : null;
+  }
+
+  function logout() {
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('tokenType');
+      localStorage.removeItem('username');
+      localStorage.removeItem('userRoles');
+      window.location.href = window.location.origin + '/login?logout=true';
+  }
+
+  async function loadHomeContent() {
+      const accessToken = localStorage.getItem('accessToken');
+      const username = localStorage.getItem('username');
+      const rolesString = localStorage.getItem('userRoles');
+      const authenticatedContent = document.getElementById('authenticatedContent');
+      const anonymousContent = document.getElementById('anonymousContent');
+      const dynamicContentDiv = document.getElementById('dynamicContent');
+
+      if (accessToken && username && rolesString) {
+          try {
+              const roles = JSON.parse(rolesString);
+              authenticatedContent.style.display = 'block';
+              document.getElementById('loggedInUsername').textContent = username;
+              document.getElementById('loggedInRoles').textContent = roles.join(', ');
+
+              // Show dashboard links based on roles
+              if (roles.includes('ROLE_ADMIN')) {
+                  document.getElementById('adminLink').style.display = 'block';
+                  document.getElementById('sellerLink').style.display = 'block';
+                  document.getElementById('customerLink').style.display = 'block';
+              } else if (roles.includes('ROLE_SELLER')) {
+                  document.getElementById('sellerLink').style.display = 'block';
+                  document.getElementById('customerLink').style.display = 'block';
+              } else if (roles.includes('ROLE_CUSTOMER')) {
+                  document.getElementById('customerLink').style.display = 'block';
+              }
+
+              const authHeaders = getAuthHeader();
+              let hasRelevantRole = roles.includes('ROLE_CUSTOMER') || roles.includes('ROLE_SELLER') || roles.includes('ROLE_ADMIN');
+
+              // ONLY fetch personalized content if the user has a relevant role AND token is present
+              if (hasRelevantRole && authHeaders) {
+                  try {
+                      // Using customer content as a generic example, you might want a more general 'home-content' API
+                      const response = await fetch('/api/customer/dashboard-content', { headers: authHeaders });
+                      if (response.ok) {
+                          const data = await response.json();
+                          dynamicContentDiv.innerHTML = `
+                              <p>${data.message}</p>
+                              <p>Explore our latest products and manage your account.</p>
+                          `;
+                      } else if (response.status === 403) {
+                           dynamicContentDiv.innerHTML = '<p style="color:red;">Access Denied to personalized home content. Your role might not allow this.</p>';
+                           console.error('Home content access denied:', response.status);
+                      } else {
+                          dynamicContentDiv.innerHTML = '<p style="color:red;">Failed to load personalized content.</p>';
+                          console.error('Failed to fetch personalized home content:', response.status);
+                      }
+                  } catch (fetchError) {
+                       dynamicContentDiv.innerHTML = '<p style="color:red;">Network error fetching personalized content.</p>';
+                       console.error('Network error during home content fetch:', fetchError);
+                  }
+              } else {
+                  // Display generic message if no specific role or token issue
+                  dynamicContentDiv.innerHTML = '<p>Welcome! Please use the dashboard links above to navigate.</p>';
+              }
+
+          } catch (e) {
+              console.error('Error parsing roles or setting up home page:', e);
+              // Fallback to anonymous if data is corrupted or essential JS fails
+              anonymousContent.style.display = 'block';
+              authenticatedContent.style.display = 'none';
+          }
+      } else {
+          anonymousContent.style.display = 'block';
+          authenticatedContent.style.display = 'none';
+      }
+  }
+  document.addEventListener('DOMContentLoaded', loadHomeContent);
+</script>
+</body>
+</html>

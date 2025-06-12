@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Fresh Harvest Login</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f7f9fc; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .login-container { background-color: white; padding: 40px; border-radius: 10px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); width: 350px; text-align: center; }
+        h2 { color: #2c3e50; margin-bottom: 25px; font-size: 24px; }
+        .form-group { margin-bottom: 20px; text-align: left; }
+        label { display: block; margin-bottom: 8px; color: #555; font-weight: 600; }
+        input[type="text"], input[type="password"] { width: calc(100% - 24px); padding: 12px; border: 1px solid #ccd0d5; border-radius: 6px; box-sizing: border-box; font-size: 16px; transition: border-color 0.3s; }
+        input[type="text"]:focus, input[type="password"]:focus { border-color: #4CAF50; outline: none; }
+        button { background-color: #4CAF50; color: white; padding: 12px 20px; border: none; border-radius: 6px; cursor: pointer; width: 100%; font-size: 18px; margin-top: 15px; transition: background-color 0.3s; }
+        button:hover { background-color: #45a049; }
+        .message-container { margin-top: 15px; font-size: 14px; }
+        .error-message { color: #e74c3c; }
+        .logout-message { color: #28a745; }
+        .register-link { margin-top: 20px; font-size: 14px; }
+        .register-link a { color: #007bff; text-decoration: none; }
+        .register-link a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+<div class="login-container">
+    <h2>Fresh Harvest Login</h2>
+    <div th:if="${param.error}" class="message-container error-message">
+        Login failed. Please check your credentials.
+    </div>
+    <div th:if="${param.logout}" class="message-container logout-message">
+        You have been logged out successfully.
+    </div>
+
+    <form id="loginForm">
+        <div class="form-group">
+            <label for="username">Username or Email:</label>
+            <input type="text" id="username" name="username" required autocomplete="username"/>
+        </div>
+        <div class="form-group">
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" required autocomplete="current-password"/>
+        </div>
+        <button type="submit">Login</button>
+        <div id="errorMessage" class="message-container error-message" style="display:none; margin-top:10px;"></div>
+    </form>
+    <div class="register-link">
+        <p>Don't have an account? <a th:href="@{/register}">Register here</a></p>
+    </div>
+</div>
+
+<script>
+    document.getElementById('loginForm').addEventListener('submit', async (event) => {
+        event.preventDefault(); // Prevent the default form submission (browser redirect)
+
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        const errorMessageDiv = document.getElementById('errorMessage');
+        errorMessageDiv.style.display = 'none'; // Hide previous error messages
+
+        try {
+            const response = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ usernameOrEmail: username, password: password }),
+            });
+
+            if (response.ok) { // Check if the response status is 2xx (e.g., 200 OK)
+                const data = await response.json(); // Parse the JSON response (your JwtAuthResponse)
+
+                // Store JWT and user info in localStorage
+                localStorage.setItem('accessToken', data.accessToken);
+                localStorage.setItem('tokenType', data.tokenType);
+                localStorage.setItem('userId', data.userId); // Store userId
+                localStorage.setItem('username', data.username);
+                localStorage.setItem('email', data.email); // Store email
+                localStorage.setItem('userRoles', JSON.stringify(data.roles)); // Store roles as a JSON string (e.g., ["ROLE_ADMIN", "ROLE_USER"])
+
+                // --- Client-Side Redirection Based on Roles (Prioritized) ---
+                const roles = data.roles; // This is an array of strings, e.g., ["ROLE_ADMIN"] or ["ROLE_CUSTOMER"]
+
+                if (roles && roles.includes('ROLE_ADMIN')) {
+                    window.location.href = window.location.origin + '/admin/dashboard'; // Admin goes to admin dashboard
+                } else if (roles && roles.includes('ROLE_SELLER')) {
+                    window.location.href = window.location.origin + '/seller/dashboard'; // Seller goes to seller dashboard
+                } else if (roles && roles.includes('ROLE_CUSTOMER')) {
+                    window.location.href = window.location.origin + '/customer/dashboard'; // Customer goes to customer dashboard
+                } else {
+                    // Fallback for users with no specific dashboard role, or new unhandled roles
+                    window.location.href = window.location.origin + '/home';
+                }
+            } else {
+                // Handle API error responses (e.g., 401 Unauthorized, 400 Bad Request, 409 Conflict)
+                const errorData = await response.json(); // Assuming backend sends error details in JSON (GlobalExceptionHandler)
+                let displayMessage = 'Login failed. Please check your credentials.';
+
+                if (response.status === 401 && errorData && errorData.message) { // From InvalidCredentialsException
+                    displayMessage = errorData.message;
+                } else if (response.status === 400 && errorData && errorData.errors) { // From MethodArgumentNotValidException
+                     displayMessage = errorData.errors.join(', '); // Join multiple validation errors
+                } else if (errorData && errorData.message) { // Generic message from ErrorDetails
+                    displayMessage = errorData.message;
+                }
+                errorMessageDiv.textContent = displayMessage;
+                errorMessageDiv.style.display = 'block';
+                console.error('Login failed:', response.status, errorData);
+            }
+        } catch (error) {
+            // Handle network errors or other unexpected issues
+            errorMessageDiv.textContent = 'An unexpected error occurred. Please try again.';
+            errorMessageDiv.style.display = 'block';
+            console.error('Network error or unexpected exception:', error);
+        }
+    });
+</script>
+</body>
+</html>

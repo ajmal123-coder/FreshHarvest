@@ -2,7 +2,6 @@ package com.Fresh_harvest.Backend.repository;
 
 
 import com.Fresh_harvest.Backend.model.Product;
-import org.apache.catalina.LifecycleState;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

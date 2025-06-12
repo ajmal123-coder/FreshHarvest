@@ -21,8 +21,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.management.relation.RoleResult;
 import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -94,10 +95,9 @@ public class AuthService {
         }
     }
     private JwtAuthResponse buildJwtAuthResponse(User user, String jwt){
-        String primaryRole = user.getRoles().stream()
-                .map(role -> role.getName().name().replace("ROLE","").toLowerCase())
-                .findFirst()
-                .orElse("customer");
-        return new JwtAuthResponse(jwt, "Bearer", user.getId(), user.getUsername(), user.getEmail(), primaryRole);
+        List<String> roles = user.getRoles().stream()
+                .map(role -> role.getName().name())
+                .toList();
+        return new JwtAuthResponse(jwt, "Bearer", user.getId(), user.getUsername(), user.getEmail(), roles);
     }
 }

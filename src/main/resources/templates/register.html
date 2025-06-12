@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <title>Fresh Harvest Registration</title>
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f7f9fc; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+    .register-container { background-color: white; padding: 40px; border-radius: 10px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); width: 400px; text-align: center; }
+    h2 { color: #2c3e50; margin-bottom: 25px; font-size: 24px; }
+    .form-group { margin-bottom: 20px; text-align: left; }
+    label { display: block; margin-bottom: 8px; color: #555; font-weight: 600; }
+    input[type="text"], input[type="password"], input[type="email"], select {
+        width: calc(100% - 24px);
+        padding: 12px;
+        border: 1px solid #ccd0d5;
+        border-radius: 6px;
+        box-sizing: border-box;
+        font-size: 16px;
+        transition: border-color 0.3s;
+    }
+    input:focus, select:focus { border-color: #4CAF50; outline: none; }
+    button { background-color: #4CAF50; color: white; padding: 12px 20px; border: none; border-radius: 6px; cursor: pointer; width: 100%; font-size: 18px; margin-top: 15px; transition: background-color 0.3s; }
+    button:hover { background-color: #45a049; }
+    .message-container { margin-top: 15px; font-size: 14px; }
+    .success-message { color: #28a745; }
+    .error-message { color: #e74c3c; }
+    .login-link { margin-top: 20px; font-size: 14px; }
+    .login-link a { color: #007bff; text-decoration: none; }
+    .login-link a:hover { text-decoration: underline; }
+    .validation-error { color: #e74c3c; font-size: 0.9em; margin-top: 5px; display: block; }
+  </style>
+</head>
+<body>
+<div class="register-container">
+  <h2>Fresh Harvest Registration</h2>
+  <form id="registrationForm">
+    <div class="form-group">
+      <label for="username">Username:</label>
+      <input type="text" id="username" name="username" required autocomplete="username"/>
+      <span class="validation-error" id="usernameError"></span>
+    </div>
+    <div class="form-group">
+      <label for="email">Email:</label>
+      <input type="email" id="email" name="email" required autocomplete="email"/>
+      <span class="validation-error" id="emailError"></span>
+    </div>
+    <div class="form-group">
+      <label for="password">Password:</label>
+      <input type="password" id="password" name="password" required autocomplete="new-password"/>
+      <span class="validation-error" id="passwordError"></span>
+    </div>
+    <div class="form-group">
+      <label for="role">Register as:</label>
+      <select id="role" name="role" required>
+        <!-- Only allow customer registration from here for security reasons -->
+        <option value="CUSTOMER">Customer</option>
+        <option value="SELLER">Seller</option>
+        <!-- Admin/Seller roles should NOT be selectable here -->
+      </select>
+      <span class="validation-error" id="roleError"></span>
+    </div>
+    <button type="submit">Register</button>
+    <div id="responseMessage" class="message-container" style="display:none;"></div>
+  </form>
+  <div class="login-link">
+    <p>Already have an account? <a th:href="@{/login}">Login here</a></p>
+  </div>
+</div>
+
+<script>
+  const registrationForm = document.getElementById('registrationForm');
+  const responseMessageDiv = document.getElementById('responseMessage');
+  const usernameError = document.getElementById('usernameError');
+  const emailError = document.getElementById('emailError');
+  const passwordError = document.getElementById('passwordError');
+  const roleError = document.getElementById('roleError'); // Though for dropdown, less likely to fail validation
+
+  function clearValidationErrors() {
+      usernameError.textContent = '';
+      emailError.textContent = '';
+      passwordError.textContent = '';
+      roleError.textContent = '';
+  }
+
+  function showMessage(message, type) {
+      responseMessageDiv.textContent = message;
+      responseMessageDiv.className = 'message-container ' + type;
+      responseMessageDiv.style.display = 'block';
+      setTimeout(() => responseMessageDiv.style.display = 'none', 5000);
+  }
+
+  registrationForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      clearValidationErrors(); // Clear errors on new submission attempt
+      responseMessageDiv.style.display = 'none'; // Hide general message
+
+      const username = document.getElementById('username').value;
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const role = document.getElementById('role').value;
+
+      const registrationData = { username, email, password, role };
+
+      try {
+          const response = await fetch('/api/auth/register', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(registrationData),
+          });
+
+          if (response.ok) { // Status 201 Created
+              showMessage('Registration successful! You can now log in.', 'success-message');
+              registrationForm.reset(); // Clear the form
+              // Optionally redirect to login page after a short delay
+              setTimeout(() => window.location.href = '/login', 2000);
+          } else if (response.status === 400) { // Validation errors
+              const errorData = await response.json();
+              if (errorData) {
+                  for (const field in errorData) {
+                      const errorElement = document.getElementById(`${field}Error`);
+                      if (errorElement) {
+                          errorElement.textContent = errorData[field];
+                      }
+                  }
+                  showMessage('Please correct the registration errors.', 'error-message');
+              } else {
+                  showMessage('Registration failed: Bad request.', 'error-message');
+              }
+          } else if (response.status === 409) { // UserAlreadyExistsException (Conflict)
+              const errorMessage = await response.text(); // Assuming it sends message directly
+              showMessage(`Registration failed: ${errorMessage}`, 'error-message');
+          } else {
+              const errorText = await response.text();
+              showMessage(`Registration failed: ${response.status} - ${errorText}`, 'error-message');
+              console.error('Registration API Error:', response.status, errorText);
+          }
+      } catch (error) {
+          showMessage('An unexpected error occurred. Please try again.', 'error-message');
+          console.error('Network error or unexpected exception:', error);
+      }
+  });
+</script>
+</body>
+</html>

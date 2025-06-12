@@ -5,7 +5,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 public class ProductMultipartRequest {
 
-    @Schema(description = "Product JSON object as string", example = "{\"name\":\"Sample Product\", \"price\":100}")
+    @Schema(description = "Product JSON object as string", example = "{\"name\":\"Sample Product\",\"description\":\"description\", \"price\":100}")
     private String product;
 
     @Schema(description = "Product image file", type = "string", format = "binary")

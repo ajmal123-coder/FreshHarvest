@@ -62,9 +62,9 @@ public class JwtUtil {
 
     private Claims extractAllClaims(String token){
         return Jwts
-                .parser() // Correct method for jjwt 0.12.5, returns JwtParserBuilder
+                .parser()
                 .setSigningKey(getSigningKey())
-                .build()  // Builds the JwtParser
+                .build()
                 .parseClaimsJws(token)
                 .getBody();
     }

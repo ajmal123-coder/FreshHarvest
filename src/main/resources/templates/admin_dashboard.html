@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+  <title>Admin Dashboard</title>
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #e6f7ff; display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+    .container { background-color: white; padding: 40px; border-radius: 12px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15); text-align: center; max-width: 600px; width: 90%; }
+    h1 { color: #2c3e50; margin-bottom: 25px; font-size: 28px; }
+    .user-info p { color: #555; font-size: 16px; margin-bottom: 8px; }
+    .user-info span { font-weight: bold; color: #34495e; }
+    .dashboard-links { margin-top: 40px; }
+    .dashboard-links h3 { color: #007bff; margin-bottom: 20px; font-size: 22px; }
+    .dashboard-links a {
+        display: inline-block;
+        background-color: #007bff;
+        color: white;
+        padding: 12px 25px;
+        border-radius: 8px;
+        text-decoration: none;
+        margin: 10px;
+        font-size: 18px;
+        transition: background-color 0.3s;
+    }
+    .dashboard-links a:hover { background-color: #0056b3; }
+    .logout-button {
+        background-color: #dc3545;
+        color: white;
+        padding: 12px 25px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+        margin-top: 30px;
+        font-size: 18px;
+        transition: background-color 0.3s;
+    }
+    .logout-button:hover { background-color: #c82333; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>Welcome to the Admin Dashboard!</h1>
+  <p>This area is exclusively for **Administrators**.</p>
+
+  <div class="user-info">
+    <!-- Display user info retrieved from localStorage after initial page load -->
+    <p>You are logged in as: <span id="loggedInUsername">Loading...</span></p>
+    <p>Your roles: <span id="loggedInRoles">Loading...</span></p>
+  </div>
+
+  <div class="dashboard-links">
+    <h3>Admin Features:</h3>
+    <a th:href="@{/admin/products}">Manage Products</a>
+    <!-- Add more admin links here -->
+  </div>
+
+  <button onclick="logout()" class="logout-button">Logout</button>
+</div>
+
+<script>
+  // This script should run on page load to display user info from localStorage
+  document.addEventListener('DOMContentLoaded', () => {
+      const username = localStorage.getItem('username');
+      const roles = JSON.parse(localStorage.getItem('userRoles')); // Parse the JSON string
+
+      if (username) {
+          document.getElementById('loggedInUsername').textContent = username;
+      }
+      if (roles) {
+          document.getElementById('loggedInRoles').textContent = roles.join(', ');
+      }
+
+      // Basic check for authentication state (optional, but good for robust UIs)
+      // If no token or roles, redirect to login (though backend security should catch it too)
+      if (!localStorage.getItem('accessToken') || !roles || roles.length === 0) {
+          console.warn('No token or roles found in localStorage. Redirecting to login.');
+          // Changed to use window.location.origin for an absolute URL
+          window.location.href = window.location.origin + '/login?error=session_expired';
+      }
+  });
+
+  // Client-side logout function
+  function logout() {
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('tokenType');
+      localStorage.removeItem('username');
+      localStorage.removeItem('userRoles');
+      // Changed to use window.location.origin for an absolute URL
+      window.location.href = window.location.origin + '/login?logout=true'; // Redirect to login page
+  }
+</script>
+</body>
+</html>

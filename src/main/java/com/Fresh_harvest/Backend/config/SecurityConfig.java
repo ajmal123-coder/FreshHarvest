@@ -60,12 +60,17 @@ public class SecurityConfig {
                                 "/v3/api-docs/**",
                                 "/swagger-resources/**",
                                 "/webjars/**").permitAll()
+                        .requestMatchers("/home").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers("/").permitAll()
                         .requestMatchers("/login", "/register").permitAll()
-                        .requestMatchers("/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/seller/**").hasAnyRole("SELLER", "ADMIN")
-                        .requestMatchers("/customer/**").hasAnyRole("CUSTOMER", "SELLER", "ADMIN")
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+//                        .requestMatchers("/seller/**").hasAnyRole("SELLER", "ADMIN")
+//                        .requestMatchers("/customer/**").hasAnyRole("CUSTOMER", "SELLER", "ADMIN")
+                        .requestMatchers("/admin/dashboard").permitAll()
+                        .requestMatchers("/seller/dashboard").permitAll()
+                        .requestMatchers("/customer/dashboard").permitAll()
+                        .requestMatchers("/admin/products").permitAll()
                         .anyRequest().authenticated())
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
