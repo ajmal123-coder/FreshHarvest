@@ -2,7 +2,6 @@ package com.Fresh_harvest.Backend.config;
 
 import com.Fresh_harvest.Backend.service.CustomUserDetailsService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.Authentication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -27,6 +26,7 @@ public class SecurityConfig {
 
     private final CustomUserDetailsService userDetailsService;
     private final JwtAuthFilter jwtAuthFilter;
+    private final AuthEntryPointJwt unauthorizedHandler;
 
     @Bean
     public PasswordEncoder passwordEncoder(){
@@ -50,10 +50,13 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception{
         http
                 .csrf(AbstractHttpConfigurer::disable)
+                .exceptionHandling(exception -> exception.authenticationEntryPoint(unauthorizedHandler))
                 .headers(headers -> headers
                         .frameOptions(HeadersConfigurer.FrameOptionsConfig::disable))
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/auth/**",
+                                "/api/sellers/register",
+                                "/api/customers/register").permitAll()
                         .requestMatchers(
                                 "/swagger-ui.html",
                                 "/swagger-ui/**",
@@ -65,12 +68,12 @@ public class SecurityConfig {
                         .requestMatchers("/").permitAll()
                         .requestMatchers("/login", "/register").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
-//                        .requestMatchers("/seller/**").hasAnyRole("SELLER", "ADMIN")
-//                        .requestMatchers("/customer/**").hasAnyRole("CUSTOMER", "SELLER", "ADMIN")
-                        .requestMatchers("/admin/dashboard").permitAll()
-                        .requestMatchers("/seller/dashboard").permitAll()
-                        .requestMatchers("/customer/dashboard").permitAll()
-                        .requestMatchers("/admin/products").permitAll()
+                        .requestMatchers("/api/seller/**").hasAnyRole("SELLER", "ADMIN")
+                        .requestMatchers("/api/customer/**").hasAnyRole("CUSTOMER", "SELLER", "ADMIN")
+//                        .requestMatchers("/admin/dashboard").permitAll()
+//                        .requestMatchers("/seller/dashboard").permitAll()
+//                        .requestMatchers("/customer/dashboard").permitAll()
+//                        .requestMatchers("/admin/products").permitAll()
                         .anyRequest().authenticated())
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)

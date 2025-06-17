@@ -1,13 +1,13 @@
 package com.Fresh_harvest.Backend.repository;
 
-import com.Fresh_harvest.Backend.model.ERole;
-import com.Fresh_harvest.Backend.model.Role;
+import com.Fresh_harvest.Backend.model.Category;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 
 @Repository
-public interface RoleRepository extends JpaRepository<Role, Long> {
-    Optional<Role> findByName(ERole name);
+public interface CategoryRepository extends JpaRepository<Category, Long> {
+
+    Optional<Category> findByName(String name);
 }

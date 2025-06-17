@@ -4,7 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 @Data
-public class UserLoginDTO {
+public class LoginRequestDto {
 
     @NotBlank(message = "Please provide Username or Email")
     private String usernameOrEmail;

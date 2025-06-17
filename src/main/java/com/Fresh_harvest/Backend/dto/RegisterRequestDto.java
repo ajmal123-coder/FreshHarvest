@@ -6,7 +6,7 @@ import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 @Data
-public class UserRegistrationDTO {
+public class RegisterRequestDto {
 
     @NotBlank(message = "username cannot be empty")
     @Size(min = 3, max = 50)
